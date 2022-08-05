@@ -1,0 +1,103 @@
+Table "employees"
+
+CREATE TABLE employees (
+    emp_no      INT             NOT NULL,  -- UNSIGNED AUTO_INCREMENT??
+    birth_date  DATE            NOT NULL,
+    first_name  VARCHAR(14)     NOT NULL,
+    last_name   VARCHAR(16)     NOT NULL,
+    gender      ENUM ('M','F')  NOT NULL,  -- Enumeration of either 'M' or 'F'  
+    hire_date   DATE            NOT NULL,
+    PRIMARY KEY (emp_no)                   -- Index built automatically on primary-key column
+                                           -- INDEX (first_name)
+                                           -- INDEX (last_name)
+);
+
+There are 300,024 records for this table.
+Table "departments"
+
+CREATE TABLE departments (
+    dept_no     CHAR(4)         NOT NULL,  -- in the form of 'dxxx'
+    dept_name   VARCHAR(40)     NOT NULL,
+    PRIMARY KEY (dept_no),                 -- Index built automatically
+    UNIQUE  KEY (dept_name)                -- Build INDEX on this unique-value column
+);
+
+The keyword KEY is synonym to INDEX. An INDEX can be built on unique-value column (UNIQUE KEY or UNIQUE INDEX) or non-unique-value column (KEY or INDEX). Indexes greatly facilitates fast search. However, they deplete the performance in INSERT, UPDATE and DELETE. Generally, relational databases are optimized for retrievals, and NOT for modifications.
+
+There are 9 records for this table.
+Table "dept_emp"
+
+Junction table to support between many-to-many relationship between employees and departments. A department has many employees. An employee can belong to different department at different dates, and possibly concurrently.
+
+CREATE TABLE dept_emp (
+    emp_no      INT         NOT NULL,
+    dept_no     CHAR(4)     NOT NULL,
+    from_date   DATE        NOT NULL,
+    to_date     DATE        NOT NULL,
+    KEY         (emp_no),   -- Build INDEX on this non-unique-value column
+    KEY         (dept_no),  -- Build INDEX on this non-unique-value column
+    FOREIGN KEY (emp_no) REFERENCES employees (emp_no) ON DELETE CASCADE,
+           -- Cascade DELETE from parent table 'employee' to this child table
+           -- If an emp_no is deleted from parent 'employee', all records
+           --  involving this emp_no in this child table are also deleted
+           -- ON UPDATE CASCADE??
+    FOREIGN KEY (dept_no) REFERENCES departments (dept_no) ON DELETE CASCADE,
+           -- ON UPDATE CASCADE??
+    PRIMARY KEY (emp_no, dept_no)
+           -- Might not be unique?? Need to include from_date
+);
+
+The foreign keys have ON DELETE reference action of CASCADE. If a record having a particular key-value from the parent table (employees and departments) is deleted, all the records in this child table having the same key-value are also deleted. Take note that the default ON DELETE reference action of is RESTRICTED, which disallows DELETE on the parent record, if there are matching records in the child table.
+
+There are two reference actions: ON DELETE and ON UPDATE. The ON UPDATE reference action of is defaulted to RESTRICT (or disallow). It is more meaningful to set ON UPDATE to CASCADE, so that changes in parent table (e.g., change in emp_no and dept_no) can be cascaded down to the child table(s).
+
+There are 331,603 records for this table.
+Table "dept_manager"
+
+join table to support between many-to-many relationship between employees and departments. Same structure as dept_emp.
+
+CREATE TABLE dept_manager (
+   dept_no      CHAR(4)  NOT NULL,
+   emp_no       INT      NOT NULL,
+   from_date    DATE     NOT NULL,
+   to_date      DATE     NOT NULL,
+   KEY         (emp_no),
+   KEY         (dept_no),
+   FOREIGN KEY (emp_no)  REFERENCES employees (emp_no)    ON DELETE CASCADE,
+                                  -- ON UPDATE CASCADE??
+   FOREIGN KEY (dept_no) REFERENCES departments (dept_no) ON DELETE CASCADE,
+   PRIMARY KEY (emp_no, dept_no)  -- might not be unique?? Need from_date
+);
+
+There are 24 records for this table.
+Table "titles"
+
+There is a one-to-many relationship between employees and titles. One employee has many titles (concurrently or at different dates). A titles record refers to one employee (via emp_no).
+
+CREATE TABLE titles (
+    emp_no      INT          NOT NULL,
+    title       VARCHAR(50)  NOT NULL,
+    from_date   DATE         NOT NULL,
+    to_date     DATE,
+    KEY         (emp_no),
+    FOREIGN KEY (emp_no) REFERENCES employees (emp_no) ON DELETE CASCADE,
+                         -- ON UPDATE CASCADE??
+    PRIMARY KEY (emp_no, title, from_date)
+       -- This ensures unique combination. 
+       -- An employee may hold the same title but at different period
+);
+
+There are 443,308 records for this table.
+Table "salaries"
+
+Similar structure to titles table. One-to-many relationship between employees and salaries.
+
+CREATE TABLE salaries (
+    emp_no      INT    NOT NULL,
+    salary      INT    NOT NULL,
+    from_date   DATE   NOT NULL,
+    to_date     DATE   NOT NULL,
+    KEY         (emp_no),
+    FOREIGN KEY (emp_no) REFERENCES employees (emp_no) ON DELETE CASCADE,
+    PRIMARY KEY (emp_no, from_date)
+);
